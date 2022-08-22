@@ -20,9 +20,18 @@ const pooledDownload = async (connect, save, downloadList, maxConcurrency) => {
         );
     }
 
+    const chunks = [];
+    const chunkSize = Math.floor(downloadList.length / connections.length);
+    for (let s=0; s<connections.length; s++) {
+        const start = s * chunkSize;
+        chunks.push(
+            downloadList.slice(start, start + chunkSize)
+        );
+    }
+
     return await Promise.all(
         connections.map(
-            connection => executePool(connection, save, downloadList)
+            (connection, c) => executePool(connection, save, chunks[c])
         )
     )
 }
