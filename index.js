@@ -7,17 +7,25 @@ const pooledDownload = async (connect, save, downloadList, maxConcurrency) => {
                     return Promise.resolve(null);
                 }
 
-                const connection = await connect();
-
-                if (!connection) {
-                    capacityReached = true;
-                    return null;
-                }
-
-                return connection;
+                return connect()
+                    .then(connection => connection)
+                    .catch(error => {
+                        capacityReached = true
+                        return null;
+                    });
             }
         )
     );
+
+    connections = connections.filter(
+        connection => connection !== null
+    );
+
+    if (connections.length === 0) {
+        return Promise.reject({
+            message: 'connection failed'}
+        );
+    }
 
     return await Promise.all(
         connections.map(
