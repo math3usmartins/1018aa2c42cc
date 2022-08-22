@@ -33,11 +33,20 @@ const pooledDownload = async (connect, save, downloadList, maxConcurrency) => {
         connections.map(
             (connection, c) => executePool(connection, save, chunks[c])
         )
-    )
+    ).finally(
+        () => {
+            connections.forEach(
+                connection => {
+                    const {_, close} = connection;
+                    close();
+                }
+            )
+        }
+    );
 }
 
 async function executePool(connection, save, downloadList) {
-    const {download, close} = connection;
+    const {download, _} = connection;
     let result;
 
     while (downloadList.length > 0) {
@@ -45,8 +54,6 @@ async function executePool(connection, save, downloadList) {
         result = await download(itemToDownload);
         await save(result);
     }
-
-    close();
 
     return result;
 }
