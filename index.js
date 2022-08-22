@@ -1,25 +1,18 @@
 const pooledDownload = async (connect, save, downloadList, maxConcurrency) => {
     let capacityReached = false;
-    let connections = await Promise.all(
-        [...Array(maxConcurrency).keys()].map(
-            async () => {
-                if (capacityReached) {
-                    return Promise.resolve(null);
-                }
+    const connections = [];
 
-                return connect()
-                    .then(connection => connection)
-                    .catch(error => {
-                        capacityReached = true
-                        return null;
-                    });
-            }
-        )
-    );
+    for (let c=0; c<maxConcurrency; c++) {
+        if (capacityReached) {
+            break;
+        }
 
-    connections = connections.filter(
-        connection => connection !== null
-    );
+        await connect()
+            .then(connection => connections.push(connection))
+            .catch(() => {
+                capacityReached = true;
+            });
+    }
 
     if (connections.length === 0) {
         return Promise.reject({
